@@ -1276,5 +1276,14 @@ const statsSection = document.querySelector('.stats-grid');
 if (statsSection) observer.observe(statsSection);
 </script>
 
+
+<script>
+// Fechar modais ao carregar - evita modal fantasma ao voltar com history.back
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.video-overlay').forEach(function(m) {
+        m.classList.remove('active');
+    });
+});
+</script>
 </body>
 </html>
