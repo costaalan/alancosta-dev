@@ -665,7 +665,7 @@
                     <span class="skill-tag">LangGraph</span><span class="skill-tag">ChromaDB</span><span class="skill-tag">DeepSeek</span><span class="skill-tag">FastAPI</span><span class="skill-tag">RAG</span>
                 </div>
                 <div style="margin-top:8px;display:flex;gap:8px;justify-content:center">
-                    <a href="javascript:void(0)" onclick="event.stopPropagation();openHROnboarding()" style="font-size:12px;color:#059669;font-weight:600;text-decoration:none">🟢 Testar Agente →</a>
+                    <a href="/hr-onboarding" style="font-size:12px;color:#059669;font-weight:600;text-decoration:none">🟢 Testar Agente →</a>
                     <a href="https://github.com/costaalan/hr-onboarding-agent" target="_blank" style="font-size:12px;color:var(--accent);text-decoration:none" onclick="event.stopPropagation()">📁 GitHub</a>
                 </div>
             </div>
@@ -839,12 +839,7 @@
 </div>
 
 <!-- HR Onboarding Modal -->
-<div class="video-overlay" id="hrModal" onclick="closeHROnboarding(event)">
-    <div class="contact-modal-card" onclick="event.stopPropagation()" style="max-width:820px;padding:0;overflow:hidden">
-        <button class="close-btn" onclick="closeHROnboarding(event)" style="top:8px;right:12px;z-index:10">✕</button>
-        <iframe src="/hr-onboarding" style="width:100%;height:85vh;border:none;border-radius:12px"></iframe>
-    </div>
-</div>
+
 
 <!-- Churn Simulator Modal -->
 <div class="video-overlay" id="churnModal" onclick="closeChurnSimulator(event)">
@@ -1127,14 +1122,6 @@ function closeSentinel(e) {
 }
 
 // ── HR Onboarding Modal ──────────────────────────
-function openHROnboarding() {
-    document.getElementById('hrModal').classList.add('active');
-}
-function closeHROnboarding(e) {
-    if (!e || e.target === document.getElementById('hrModal') || e.target.classList.contains('close-btn')) {
-        document.getElementById('hrModal').classList.remove('active');
-    }
-}
 </script>
 
 <!-- Particle Background Animation -->
