@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Skills Graph — Mapeador de Competências</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Inter,system-ui,sans-serif;background:#f8f9fa;color:#1a1a2e}
+.nav{display:flex;align-items:center;gap:16px;padding:16px 32px;background:#fff;border-bottom:1px solid #e5e7eb;flex-wrap:wrap}
+.nav a{color:#4f46e5;text-decoration:none;font-weight:600;font-size:14px}
+.nav .badge{background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600}
+.container{max-width:1200px;margin:0 auto;padding:32px 24px}
+
+/* Header */
+.hero{margin-bottom:32px}
+.hero h1{font-size:32px;font-weight:800;margin-bottom:6px}
+.hero .tagline{font-size:18px;color:#6b7280;margin-bottom:16px;line-height:1.5}
+.hero .status-bar{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px}
+.status{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:99px;font-size:13px;font-weight:500}
+.status.demo{background:#fef3c7;color:#92400e}
+.status.jira{background:#eef2ff;color:#4f46e5}
+.status.github{background:#f0fdf4;color:#166534}
+
+/* Cards */
+.card{background:#fff;border-radius:16px;padding:24px;border:1px solid #e5e7eb;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.card h2{font-size:18px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.card h3{font-size:14px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+.card p,.card li{font-size:14px;color:#4b5563;line-height:1.7}
+.card ul{margin-left:20px;margin-top:8px}
+.card ul li{margin-bottom:6px}
+
+/* Pipeline */
+.pipeline{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;padding:20px 0}
+.pipe-node{background:#fff;border:2px solid #e5e7eb;border-radius:12px;padding:14px 18px;text-align:center;min-width:100px;transition:.2s}
+.pipe-node:hover{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+.pipe-node .icon{font-size:24px;margin-bottom:4px}
+.pipe-node .title{font-weight:700;font-size:13px;color:#1a1a2e}
+.pipe-node .sub{font-size:11px;color:#9ca3af}
+.pipe-arrow{font-size:20px;color:#9ca3af;font-weight:700}
+
+/* Limitations table */
+.limits-table{width:100%;border-collapse:collapse;font-size:13px}
+.limits-table th{text-align:left;padding:10px 12px;background:#f9fafb;border-bottom:2px solid #e5e7eb;font-weight:600;color:#6b7280}
+.limits-table td{padding:10px 12px;border-bottom:1px solid #f3f4f6;color:#4b5563}
+.limits-table .ok{color:#059669;font-weight:600}
+.limits-table .warn{color:#d97706;font-weight:600}
+.limits-table .block{color:#dc2626;font-weight:600}
+
+/* Graph section */
+.search-box{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap}
+.search-box input{flex:1;min-width:280px;padding:12px 16px;border:2px solid #e5e7eb;border-radius:12px;font-size:15px;font-family:Inter,sans-serif}
+.search-box input:focus{outline:none;border-color:#4f46e5}
+.search-box button{padding:12px 24px;background:#4f46e5;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;transition:.2s}
+.search-box button:hover{background:#4338ca}
+#graph{width:100%;height:550px;background:#fff;border-radius:16px;border:1px solid #e5e7eb;position:relative;overflow:hidden;margin-bottom:16px}
+#graph canvas{display:block}
+.demo-notice{text-align:center;padding:12px;background:#fffbeb;border:1px solid #fcd34d;border-radius:12px;font-size:13px;color:#92400e;margin-bottom:16px}
+
+.info-panel{display:flex;gap:16px;flex-wrap:wrap}
+.info-card{flex:1;min-width:220px;background:#fff;border-radius:12px;padding:20px;border:1px solid #e5e7eb}
+.info-card h3{font-size:14px;font-weight:700;margin-bottom:8px;text-transform:none;letter-spacing:0}
+.skill-tag{display:inline-block;padding:4px 10px;background:#eef2ff;color:#4f46e5;border-radius:8px;font-size:12px;font-weight:600;margin:3px}
+.skill-tag.highlight{background:#4f46e5;color:#fff}
+.legend{display:flex;gap:16px;font-size:13px;color:#6b7280;flex-wrap:wrap}
+.legend span{display:flex;align-items:center;gap:6px}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+
+/* Diff */
+.diff-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:12px}
+.diff-table th{text-align:left;padding:8px 12px;background:#f9fafb;border-bottom:1px solid #e5e7eb;font-weight:600}
+.diff-table td{padding:10px 12px;border-bottom:1px solid #f3f4f6;vertical-align:top}
+.diff-table .old{color:#9ca3af}
+.diff-table .new{color:#059669;font-weight:500}
+
+@media(max-width:768px){
+    .pipeline{flex-direction:column}.pipe-arrow{transform:rotate(90deg)}
+    .nav{padding:12px 16px}
+}
+</style>
+</head>
+<body>
+<nav class="nav">
+    <a href="javascript:history.back()">← Voltar</a>
+    <span class="badge">🚧 Demo/Mock</span>
+    <a href="https://github.com/costaalan/sprint-health-agent" target="_blank" style="margin-left:auto;font-size:12px">📁 GitHub</a>
+</nav>
+
+<div class="container">
+
+<!-- Hero -->
+<div class="hero">
+    <h1>🧠 Skills Graph — Mapeador de Competências</h1>
+    <p class="tagline">
+        Plataforma inteligente que mapeia skills de times automaticamente a partir de GitHub e LinkedIn.<br>
+        Monte equipes ideais em segundos — digite uma tecnologia e veja quem a domina.
+    </p>
+    <div class="status-bar">
+        <span class="status jira">📋 SCRUM-9 · Em andamento</span>
+        <span class="status demo">🚧 Demo com dados mock — versão real em desenvolvimento</span>
+    </div>
+</div>
+
+<!-- What it is -->
+<div class="card">
+    <h2>💡 O Projeto Real</h2>
+    <p>
+        Um <strong>grafo interativo de competências</strong> que analisa automaticamente o ecossistema 
+        de um time/empresa e revela <strong>quem sabe o quê</strong>. Ideal para:
+    </p>
+    <ul>
+        <li><strong>Gestores:</strong> monte squads balanceados em 1 clique — "quem sabe Rust + AWS?"</li>
+        <li><strong>RH/Tech Leads:</strong> identifique gaps de skills e planeje contratações com dados</li>
+        <li><strong>Devs:</strong> descubra colegas que dominam tecnologias que você quer aprender</li>
+        <li><strong>Consultorias:</strong> apresente a capacitação do time para clientes de forma visual</li>
+    </ul>
+</div>
+
+<!-- Pipeline -->
+<div class="card">
+    <h2>🔄 Pipeline (Versão Real)</h2>
+    <div class="pipeline">
+        <div class="pipe-node">
+            <div class="icon">🐙</div>
+            <div class="title">GitHub API</div>
+            <div class="sub">Repos · Commits · Linguagens</div>
+        </div>
+        <span class="pipe-arrow">→</span>
+        <div class="pipe-node">
+            <div class="icon">💼</div>
+            <div class="title">LinkedIn API</div>
+            <div class="sub">Perfil · Headline · Experiência</div>
+        </div>
+        <span class="pipe-arrow">→</span>
+        <div class="pipe-node">
+            <div class="icon">🧹</div>
+            <div class="title">LangGraph</div>
+            <div class="sub">NLP · Python · Classificação</div>
+        </div>
+        <span class="pipe-arrow">→</span>
+        <div class="pipe-node">
+            <div class="icon">🧠</div>
+            <div class="title">LLM</div>
+            <div class="sub">Normalização de skills · Pesos</div>
+        </div>
+        <span class="pipe-arrow">→</span>
+        <div class="pipe-node">
+            <div class="icon">📊</div>
+            <div class="title">Grafo Interativo</div>
+            <div class="sub">Canvas · Busca · Filtros</div>
+        </div>
+    </div>
+    <p style="text-align:center;font-size:12px;color:#9ca3af;margin-top:8px">
+        Stack: Python · LangGraph · GitHub REST API · Canvas API · n8n (agendamento)
+    </p>
+</div>
+
+<!-- API Limitations -->
+<div class="card">
+    <h2>🔒 Limitações das Plataformas</h2>
+    <p style="margin-bottom:16px">As APIs públicas impõem restrições reais que impactam o escopo do projeto:</p>
+    
+    <table class="limits-table">
+        <tr><th>Plataforma</th><th>Limitação</th><th>Impacto</th><th>Status</th></tr>
+        <tr>
+            <td><strong>GitHub</strong></td>
+            <td>60 req/h sem token · 5000 req/h com PAT</td>
+            <td>Viável com autenticação — 1 token cobre todo o time</td>
+            <td class="ok">✅ Viável</td>
+        </tr>
+        <tr>
+            <td><strong>GitHub</strong></td>
+            <td>Events API: apenas últimos 90 dias de atividade</td>
+            <td>Histórico profundo requer Git clone local (mais lento)</td>
+            <td class="warn">⚠️ Limitado</td>
+        </tr>
+        <tr>
+            <td><strong>GitHub</strong></td>
+            <td>Search API: max 1000 resultados por query</td>
+            <td>OK para times < 1000 devs</td>
+            <td class="ok">✅ Viável</td>
+        </tr>
+        <tr>
+            <td><strong>LinkedIn</strong></td>
+            <td>API de skills <strong>removida em 2023</strong></td>
+            <td>Não é mais possível extrair skills do perfil via API oficial</td>
+            <td class="block">🚫 Bloqueado</td>
+        </tr>
+        <tr>
+            <td><strong>LinkedIn</strong></td>
+            <td>API Partners apenas para produtos aprovados</td>
+            <td>Sem acesso a dados de outros usuários sem contrato enterprise</td>
+            <td class="block">🚫 Bloqueado</td>
+        </tr>
+        <tr>
+            <td><strong>LinkedIn</strong></td>
+            <td>Rate limit: ~100 req/dia por app</td>
+            <td>Inviável para times grandes</td>
+            <td class="block">🚫 Bloqueado</td>
+        </tr>
+    </table>
+
+    <div style="margin-top:20px;padding:16px;background:#f0fdf4;border-radius:12px;border:1px solid #bbf7d0">
+        <strong>✅ Estratégia adotada:</strong>
+        <ul style="margin-top:8px">
+            <li><strong>GitHub</strong> como fonte primária — linguagens, commits, estrelas, contribuições</li>
+            <li><strong>Auto-reporte</strong> como complemento — formulário interno para skills não detectáveis (soft skills, metodologias)</li>
+            <li><strong>LLM</strong> para inferir skills a partir de descrições de repo e README</li>
+            <li><strong>LangGraph</strong> como orquestrador do pipeline de extração → normalização → grafo</li>
+        </ul>
+    </div>
+</div>
+
+<!-- Demo section -->
+<div class="demo-notice">
+    ⚠️ <strong>Modo Demonstração:</strong> Os dados abaixo são <strong>mock</strong> (12 pessoas fictícias). 
+    A versão real puxará dados do GitHub e auto-reporte conforme descrito acima.
+</div>
+
+<!-- Search + Graph -->
+<div class="card">
+    <h2>🎮 Demonstração Interativa</h2>
+    
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Ex: React, Python, AWS, Kubernetes..." onkeyup="highlightSkills()">
+        <button onclick="highlightSkills()">🔍 Buscar</button>
+        <button onclick="resetGraph()" style="background:#e5e7eb;color:#1a1a2e">🔄 Reset</button>
+    </div>
+    
+    <div id="graph"><canvas id="graphCanvas"></canvas></div>
+    
+    <div class="legend">
+        <span><span class="dot" style="background:#4f46e5"></span> Pessoa</span>
+        <span><span class="dot" style="background:#10b981"></span> Skill encontrada</span>
+        <span style="margin-left:auto;color:#9ca3af">🖱️ Arraste os nós para reorganizar</span>
+    </div>
+    
+    <div class="info-panel" style="margin-top:20px">
+        <div class="info-card">
+            <h3>📊 Time</h3>
+            <p id="stats">Carregando...</p>
+        </div>
+        <div class="info-card">
+            <h3>🏆 Top Skills</h3>
+            <div id="topSkills"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Roadmap -->
+<div class="card">
+    <h2>🗺️ Roadmap</h2>
+    <table class="diff-table">
+        <tr><th style="width:33%">Versão Atual (Demo)</th><th style="width:33%">v1 Real (MVP)</th><th>v2 (Futuro)</th></tr>
+        <tr>
+            <td class="old">12 pessoas fictícias com dados mock</td>
+            <td class="new">Conexão real com GitHub API (linguagens, commits)</td>
+            <td>Auto-reporte de skills + LLM para inferência</td>
+        </tr>
+        <tr>
+            <td class="old">Skills pré-definidas manualmente</td>
+            <td class="new">Extração automática via LangGraph</td>
+            <td>Integração com Jira/atividade de PRs</td>
+        </tr>
+        <tr>
+            <td class="old">Busca simples no frontend</td>
+            <td class="new">Grafo com dados reais + busca</td>
+            <td>Dashboard de gaps e recomendações</td>
+        </tr>
+    </table>
+</div>
+
+</div>
+
+<script>
+// ── Dados simulados (12 pessoas, dados mock) ──
+const people = [
+    {name:'Alan Costa',role:'AI Agent Dev',color:'#4f46e5',skills:['Python','AI/ML','LLMs','API REST','Docker','SQL','Git','AWS']},
+    {name:'Maria Silva',role:'Frontend Lead',color:'#7c3aed',skills:['React','TypeScript','CSS','Figma','Next.js','GraphQL','Jest','Git']},
+    {name:'João Pedro',role:'Backend Dev',color:'#0891b2',skills:['Python','Node.js','PostgreSQL','Docker','Redis','AWS','Kubernetes','Git']},
+    {name:'Ana Costa',role:'Data Engineer',color:'#059669',skills:['Python','SQL','Spark','Airflow','AWS','Databricks','Kafka','Docker']},
+    {name:'Carlos Lima',role:'DevOps',color:'#d97706',skills:['AWS','Kubernetes','Docker','Terraform','CI/CD','GitHub Actions','Prometheus','Linux']},
+    {name:'Julia Santos',role:'Product Designer',color:'#db2777',skills:['Figma','UX Research','Design System','Prototyping','CSS','HTML','User Testing','Framer']},
+    {name:'Rafael Gomes',role:'Fullstack',color:'#2563eb',skills:['React','Node.js','TypeScript','MongoDB','Docker','AWS','Python','PostgreSQL']},
+    {name:'Beatriz Oliveira',role:'ML Engineer',color:'#9333ea',skills:['Python','PyTorch','TensorFlow','MLOps','SQL','AWS','Docker','Kubernetes']},
+    {name:'Lucas Martins',role:'Mobile Dev',color:'#ea580c',skills:['React Native','TypeScript','iOS','Android','Firebase','GraphQL','Jest','Git']},
+    {name:'Fernanda Lima',role:'QA Lead',color:'#16a34a',skills:['Cypress','Selenium','Jest','Python','Postman','CI/CD','Jira','TestRail']},
+    {name:'Pedro Alves',role:'Security Engineer',color:'#dc2626',skills:['OWASP','Kubernetes','AWS','Python','Burp Suite','SIEM','Docker','Linux']},
+    {name:'Camila Rocha',role:'Tech Lead',color:'#0d9488',skills:['Architecture','Java','Python','AWS','Kubernetes','Microservices','Agile','PostgreSQL']},
+];
+
+const canvas = document.getElementById('graphCanvas');
+const ctx = canvas.getContext('2d');
+let nodes = [], draggedNode = null, offsetX = 0, offsetY = 0, highlightedSkills = [];
+
+function resizeCanvas() {
+    const parent = document.getElementById('graph');
+    canvas.width = parent.clientWidth * 2;
+    canvas.height = 550 * 2;
+    canvas.style.width = parent.clientWidth + 'px';
+    canvas.style.height = '550px';
+    ctx.scale(2, 2);
+}
+resizeCanvas();
+window.addEventListener('resize', () => { resizeCanvas(); drawGraph(); });
+
+function initNodes() {
+    nodes = [];
+    const W = canvas.width / 2 - 120, H = 450, cx = W / 2 + 60, cy = H / 2 + 40;
+    people.forEach((p, i) => {
+        const angle = (i / people.length) * Math.PI * 2;
+        const r = Math.min(W, H) * 0.38;
+        nodes.push({ x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r, r: 32, person: p, highlight: false });
+    });
+    drawGraph(); updateStats();
+}
+
+function drawConnections() {
+    for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+            const shared = nodes[i].person.skills.filter(s => nodes[j].person.skills.includes(s));
+            if (shared.length > 0) {
+                const alpha = highlightedSkills.length > 0 ? 0.05 : Math.min(0.15, shared.length * 0.02);
+                ctx.beginPath(); ctx.moveTo(nodes[i].x, nodes[i].y); ctx.lineTo(nodes[j].x, nodes[j].y);
+                ctx.strokeStyle = `rgba(79,70,229,${alpha})`; ctx.lineWidth = shared.length * 0.3; ctx.stroke();
+            }
+        }
+    }
+}
+
+function drawGraph() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawConnections();
+    nodes.forEach(node => {
+        const p = node.person;
+        ctx.beginPath(); ctx.arc(node.x, node.y, node.r, 0, Math.PI * 2);
+        ctx.fillStyle = node.highlight ? p.color : '#f0f0f5'; ctx.fill();
+        ctx.strokeStyle = node.highlight ? p.color + '99' : '#d1d5db';
+        ctx.lineWidth = node.highlight ? 3 : 1.5; ctx.stroke();
+        const initials = p.name.split(' ').map(w => w[0]).join('').substring(0, 2);
+        ctx.fillStyle = node.highlight ? '#fff' : p.color;
+        ctx.font = `bold ${node.highlight ? 18 : 14}px Inter,system-ui,sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(initials, node.x, node.y);
+        ctx.fillStyle = '#1a1a2e'; ctx.font = '12px Inter,system-ui,sans-serif';
+        ctx.fillText(p.name.split(' ')[0], node.x, node.y + node.r + 16);
+    });
+}
+
+canvas.addEventListener('mousedown', e => {
+    const rect = canvas.getBoundingClientRect();
+    const pos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    const hit = nodes.find(n => Math.hypot(n.x - pos.x, n.y - pos.y) < n.r);
+    if (hit) { draggedNode = hit; offsetX = hit.x - pos.x; offsetY = hit.y - pos.y; showPersonInfo(hit.person); }
+});
+canvas.addEventListener('mousemove', e => {
+    if (draggedNode) {
+        const rect = canvas.getBoundingClientRect();
+        draggedNode.x = e.clientX - rect.left + offsetX;
+        draggedNode.y = e.clientY - rect.top + offsetY;
+        drawGraph();
+    }
+});
+canvas.addEventListener('mouseup', () => { draggedNode = null; });
+
+function showPersonInfo(p) {
+    document.getElementById('stats').innerHTML = `<strong>${p.name}</strong> — ${p.role}<br>Skills: ${p.skills.join(', ')}`;
+}
+
+function highlightSkills() {
+    const query = document.getElementById('searchInput').value.toLowerCase().trim();
+    if (!query) { resetGraph(); return; }
+    const terms = query.split(/[\s,]+/).filter(Boolean);
+    highlightedSkills = terms;
+    nodes.forEach(node => {
+        node.highlight = terms.every(t => 
+            node.person.skills.some(s => s.toLowerCase().includes(t)) ||
+            node.person.name.toLowerCase().includes(t) ||
+            node.person.role.toLowerCase().includes(t)
+        );
+    });
+    const matches = nodes.filter(n => n.highlight);
+    document.getElementById('stats').innerHTML = `🔍 Busca: <strong>${query}</strong><br>👥 Encontrados: <strong>${matches.length} pessoas</strong>`;
+    drawGraph();
+}
+
+function resetGraph() {
+    highlightedSkills = []; nodes.forEach(n => n.highlight = false);
+    document.getElementById('searchInput').value = ''; updateStats(); drawGraph();
+}
+
+function updateStats() {
+    const allSkills = new Set(); people.forEach(p => p.skills.forEach(s => allSkills.add(s)));
+    const skillCount = {}; people.forEach(p => p.skills.forEach(s => skillCount[s] = (skillCount[s]||0) + 1));
+    const top = Object.entries(skillCount).sort((a,b) => b[1]-a[1]).slice(0, 8);
+    document.getElementById('stats').innerHTML = `👥 <strong>${people.length} pessoas</strong> (mock)<br>🎯 <strong>${allSkills.size} skills</strong> mapeadas`;
+    document.getElementById('topSkills').innerHTML = top.map(([s,c]) => `<span class="skill-tag">${s} (${c})</span>`).join(' ');
+}
+
+initNodes();
+</script>
+</body>
+</html>
