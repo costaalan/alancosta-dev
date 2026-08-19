@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Churn Predictor — Simulador</title>
+<style>
+:root {
+    --bg: #f0f4f8; --white: #ffffff; --text: #1a1a2e; --muted: #6b7280;
+    --accent: #0075de; --accent-hover: #005bab; --border: #e5e7eb;
+    --green: #22c55e; --orange: #ffa502; --red: #ff4757;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height:100vh; }
+.container { max-width: 520px; margin: 0 auto; padding: 32px 20px; }
+.back-link {
+    display:inline-flex; align-items:center; gap:6px; color:var(--muted);
+    text-decoration:none; font-size:14px; font-weight:500; margin-bottom:24px; transition:color .2s;
+}
+.back-link:hover { color: var(--accent); }
+.card {
+    background: var(--white); border-radius:16px; padding:28px;
+    border:1px solid var(--border); box-shadow:0 1px 3px rgba(0,0,0,.04);
+}
+h1 { font-size:26px; font-weight:800; margin-bottom:4px; }
+.subtitle { color:var(--muted); font-size:14px; margin-bottom:24px; }
+label { font-size:12px; color:var(--muted); }
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:20px; }
+.ch-slider { width:100%; accent-color:var(--accent); margin-top:6px; }
+.ch-val { font-size:12px; font-weight:600; color:var(--accent); margin-left:4px; }
+select { width:100%; padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--white); color:var(--text); font-size:14px; margin-top:6px; }
+.btn {
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    width:100%; padding:12px 24px; border-radius:8px; font-size:15px; font-weight:600;
+    text-decoration:none; transition:all .2s; border:none; cursor:pointer;
+}
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow:0 4px 16px rgba(0,117,222,.3); }
+#churnResult { display:none; text-align:center; margin-top:16px; padding:16px; border-radius:12px; }
+#churnGauge { font-size:48px; font-weight:800; margin-bottom:4px; }
+#churnLabel { font-size:14px; font-weight:600; }
+#churnDetail { font-size:12px; color:var(--muted); margin-top:8px; }
+.gh-link { text-align:center; margin-top:16px; }
+.gh-link a { font-size:12px; color:var(--accent); text-decoration:none; }
+</style>
+</head>
+<body>
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Voltar ao Portfólio</a>
+
+    <div class="card">
+        <h1>📉 Churn Predictor</h1>
+        <p class="subtitle">Simulador interativo — ajuste os parâmetros e veja a predição de churn</p>
+
+        <div class="grid">
+            <div>
+                <label>Sessões/dia</label>
+                <input type="range" id="chSessoes" min="0" max="10" value="5" class="ch-slider" oninput="updateChurnSliders()"><span class="ch-val" id="chSessoesVal">5</span>
+            </div>
+            <div>
+                <label>Minutos ativos</label>
+                <input type="range" id="chMins" min="0" max="90" value="42" class="ch-slider" oninput="updateChurnSliders()"><span class="ch-val" id="chMinsVal">42</span>
+            </div>
+            <div>
+                <label>Erros (últimos 30d)</label>
+                <input type="range" id="chErros" min="0" max="10" value="1" class="ch-slider" oninput="updateChurnSliders()"><span class="ch-val" id="chErrosVal">1</span>
+            </div>
+            <div>
+                <label>Tickets suporte</label>
+                <input type="range" id="chTickets" min="0" max="8" value="1" class="ch-slider" oninput="updateChurnSliders()"><span class="ch-val" id="chTicketsVal">1</span>
+            </div>
+            <div>
+                <label>Satisfação (1-5)</label>
+                <input type="range" id="chSat" min="1" max="5" value="4" class="ch-slider" oninput="updateChurnSliders()"><span class="ch-val" id="chSatVal">4</span>
+            </div>
+            <div>
+                <label>Plano</label>
+                <select id="chPlano">
+                    <option value="1">Basic</option>
+                    <option value="2">Pro</option>
+                    <option value="3">Enterprise</option>
+                    <option value="1">Starter</option>
+                </select>
+            </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="predictChurn()">🔮 Prever Churn</button>
+
+        <div id="churnResult">
+            <div id="churnGauge"></div>
+            <div id="churnLabel"></div>
+            <div id="churnDetail"></div>
+        </div>
+
+        <div class="gh-link">
+            <a href="https://github.com/costaalan/churn-predictor" target="_blank">🔗 Ver no GitHub</a>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateChurnSliders() {
+    ['Sessoes','Mins','Erros','Tickets','Sat'].forEach(k => {
+        document.getElementById('ch'+k+'Val').textContent = document.getElementById('ch'+k).value;
+    });
+}
+
+async function predictChurn() {
+    const result = document.getElementById('churnResult');
+    const gauge = document.getElementById('churnGauge');
+    const label = document.getElementById('churnLabel');
+    const detail = document.getElementById('churnDetail');
+
+    result.style.display = 'block';
+    gauge.textContent = '⏳';
+    label.textContent = 'Calculando...';
+
+    const data = {
+        sessoes: parseInt(document.getElementById('chSessoes').value),
+        mins: parseInt(document.getElementById('chMins').value),
+        erros: parseInt(document.getElementById('chErros').value),
+        tickets: parseInt(document.getElementById('chTickets').value),
+        satisfacao: parseInt(document.getElementById('chSat').value),
+        plano_num: parseInt(document.getElementById('chPlano').value),
+        idade: 35
+    };
+
+    try {
+        const resp = await fetch('/api/churn/predict', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify(data)
+        });
+        if (!resp.ok) throw new Error('API indisponivel');
+        const r = await resp.json();
+
+        const prob = r.churn_prob;
+        gauge.textContent = prob + '%';
+
+        if (prob < 30) {
+            result.style.background = 'rgba(34,197,94,.1)';
+            label.textContent = '🟢 Baixo risco';
+            label.style.color = '#22c55e';
+        } else if (prob < 60) {
+            result.style.background = 'rgba(255,165,2,.1)';
+            label.textContent = '🟡 Médio risco';
+            label.style.color = '#ffa502';
+        } else {
+            result.style.background = 'rgba(255,71,87,.1)';
+            label.textContent = '🔴 Alto risco';
+            label.style.color = '#ff4757';
+        }
+
+        const f = r.features_analisadas;
+        detail.innerHTML = `Sessões: ${f.sessoes}/dia · Minutos: ${f.minutos_ativos} · Erros: ${f.erros} · Tickets: ${f.tickets} · Satisfação: ${f.satisfacao}/5`;
+    } catch(e) {
+        gauge.textContent = '❌';
+        label.textContent = 'Erro na predição';
+    }
+}
+</script>
+</body>
+</html>
